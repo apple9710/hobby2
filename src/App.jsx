@@ -1,14 +1,12 @@
-
 import { useRef, useState, useEffect } from 'react';
 import Matter from 'matter-js';
 import './App.css';
 
 function App() {
-  const [hobbies, setHobbies] = useState([]);
   const [input, setInput] = useState('');
   const sceneRef = useRef(null);
   const engineRef = useRef(null);
-  const [boxes, setBoxes] = useState([]);
+  const bodiesRef = useRef([]); // HTML 요소와 Matter.js body 매핑
 
   // Matter.js 초기화
   useEffect(() => {
@@ -22,118 +20,153 @@ function App() {
     const width = window.innerWidth > 480 ? 480 : window.innerWidth;
     const height = 500;
 
-    // 바닥, 벽
-    const ground = Bodies.rectangle(width / 2, height, width, 40, { isStatic: true });
-    const leftWall = Bodies.rectangle(0, height / 2, 40, height, { isStatic: true });
-    const rightWall = Bodies.rectangle(width, height / 2, 40, height, { isStatic: true });
+    // 바닥, 벽 (보이지 않는 물리 경계)
+    const ground = Bodies.rectangle(width / 2, height - 20, width, 40, {
+      isStatic: true,
+    });
+    const leftWall = Bodies.rectangle(20, height / 2, 40, height, {
+      isStatic: true,
+    });
+    const rightWall = Bodies.rectangle(width - 20, height / 2, 40, height, {
+      isStatic: true,
+    });
     World.add(engine.world, [ground, leftWall, rightWall]);
 
     Engine.run(engine);
 
-    // 커스텀 캔버스 생성
-    const canvas = document.createElement('canvas');
-    canvas.width = width;
-    canvas.height = height;
-    sceneRef.current.innerHTML = '';
-    sceneRef.current.appendChild(canvas);
-
-    engineRef.current.canvas = canvas;
     engineRef.current.width = width;
     engineRef.current.height = height;
 
     return () => {
       Engine.clear(engine);
-      if (canvas) canvas.remove();
+      bodiesRef.current = [];
     };
   }, []);
 
-
-  // 박스 추가 및 물리 엔진에 연결
-  useEffect(() => {
+  // 새로운 박스만 추가하는 함수
+  const addNewBox = (hobbyText) => {
     if (!engineRef.current) return;
+
     const World = Matter.World,
       Bodies = Matter.Bodies;
 
-    // 기존 박스 제거
-    engineRef.current.world.bodies
-      .filter(b => b.label === 'hobby')
-      .forEach(b => Matter.World.remove(engineRef.current.world, b));
+    // 8개 제한 - 가장 오래된 공 제거
+    if (bodiesRef.current.length >= 8) {
+      const oldest = bodiesRef.current.shift();
+      Matter.World.remove(engineRef.current.world, oldest.body);
+      oldest.element.remove();
+    }
 
-    // 박스 생성 (입력된 취미 텍스트와 연결)
-    boxes.forEach((box, i) => {
-      const body = Bodies.circle(60 + i * 50 + 60, 60, 40, {
-        label: 'hobby',
-        restitution: 0.8,
-      });
-      body.hobbyText = box;
-      World.add(engineRef.current.world, body);
+    // 텍스트 길이에 따른 크기 계산
+    const textLength = hobbyText.length;
+    const minWidth = 80;
+    const charWidth = 12; // 글자 하나당 대략적인 픽셀 너비
+    const elementWidth = Math.max(minWidth, textLength * charWidth + 40); // 패딩 포함
+    const radius = elementWidth / 2; // 반지름은 너비의 절반
+
+    // 새로운 공 생성 (동적 크기)
+    const randomX =
+      Math.random() * (engineRef.current.width - elementWidth) + radius;
+    const body = Bodies.rectangle(randomX, 60, elementWidth, 80, {
+      label: 'hobby',
+      restitution: 0.8,
+      chamfer: {
+        radius: 40, // 모서리 반지름 설정
+      },
     });
-  }, [boxes]);
 
+    // HTML 요소 생성
+    const element = document.createElement('div');
+    element.className = 'hobby-ball';
+    element.textContent = hobbyText;
+    element.style.cssText = `
+    position: absolute;
+    width: ${elementWidth}px;
+    height: 80px;
+    border-radius: 40px;
+    background: #6c47ff;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: bold;
+    box-shadow: 0 4px 12px rgba(108, 71, 255, 0.3);
+    border: 2px solid #fff;
+    text-align: center;
+    user-select: none;
+    pointer-events: none;
+    transform-origin: center;
+  `;
 
-  // 커스텀 캔버스에 박스와 텍스트 직접 그리기
+    sceneRef.current.appendChild(element);
+
+    // body와 element 매핑 저장 (크기 정보도 포함)
+    bodiesRef.current.push({ body, element, hobbyText, width: elementWidth });
+    World.add(engineRef.current.world, body);
+  };
+
+  // 물리 엔진 업데이트 및 HTML 요소 위치 동기화
   useEffect(() => {
-    if (!engineRef.current || !engineRef.current.canvas) return;
-    const engine = engineRef.current;
-    const canvas = engine.canvas;
-    const ctx = canvas.getContext('2d');
+    if (!engineRef.current) return;
 
-    function draw() {
-      // Matter.js 엔진 업데이트 (물리 시뮬레이션)
+    const engine = engineRef.current;
+
+    function updatePositions() {
+      // Matter.js 엔진 업데이트
       Matter.Engine.update(engine, 1000 / 60);
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      // 박스 그리기
-      const bodies = engine.world.bodies.filter(b => b.label === 'hobby');
-      bodies.forEach((body) => {
-        ctx.save();
-        ctx.beginPath();
-        ctx.arc(body.position.x, body.position.y, 40, 0, 2 * Math.PI);
-        ctx.fillStyle = '#6c47ff';
-        ctx.shadowColor = '#6c47ff44';
-        ctx.shadowBlur = 8;
-        ctx.fill();
-        ctx.lineWidth = 2;
-        ctx.strokeStyle = '#fff';
-        ctx.stroke();
-        ctx.font = '16px sans-serif';
-        ctx.fillStyle = '#fff';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(body.hobbyText, body.position.x, body.position.y);
-        ctx.restore();
+
+      // HTML 요소 위치 업데이트
+      bodiesRef.current.forEach(({ body, element, width }) => {
+        const x = body.position.x - width / 2; // 중심점 조정 (동적 너비 반영)
+        const elementHeight = 80;
+        const y = body.position.y - elementHeight / 2; // 높이는 고정
+        const rotation = body.angle;
+
+        element.style.transform = `translate(${x}px, ${y}px) rotate(${rotation}rad)`;
       });
     }
 
-    // Matter.js 엔진 tick마다 draw 호출
-    const runner = setInterval(() => {
-      draw();
-    }, 1000 / 60);
+    const runner = setInterval(updatePositions, 1000 / 60);
     return () => clearInterval(runner);
-  }, [boxes]);
+  }, []);
 
   const handleAdd = (e) => {
     e.preventDefault();
     if (!input.trim()) return;
-    let newBoxes = [...boxes, input.trim()];
-    if (newBoxes.length > 8) newBoxes = newBoxes.slice(1);
-    setBoxes(newBoxes);
+
+    addNewBox(input.trim());
     setInput('');
   };
 
   return (
     <div className="hobby-page">
-      <h2 className="hobby-title">게임</h2>
+      <h2 className="hobby-title">GAME</h2>
       <form className="hobby-form" onSubmit={handleAdd}>
         <input
           className="hobby-input"
           type="text"
           value={input}
-          onChange={e => setInput(e.target.value)}
+          onChange={(e) => setInput(e.target.value)}
           placeholder="취미를 입력하세요"
         />
-        <button className="hobby-btn" type="submit">추가</button>
+        <button className="hobby-btn" type="submit">
+          추가
+        </button>
       </form>
-      <div ref={sceneRef} className="hobby-canvas" style={{ width: '100%', height: 500, margin: '0 auto' }} />
+      <div
+        ref={sceneRef}
+        className="hobby-canvas"
+        style={{
+          width: '100%',
+          height: 500,
+          margin: '0 auto',
+          position: 'relative',
+          overflow: 'hidden',
+          border: '2px solid #ddd',
+          borderRadius: '8px',
+        }}
+      />
     </div>
   );
 }
