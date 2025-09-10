@@ -1,16 +1,43 @@
 
+:root{
+  --primary-bg_first :linear-gradient(180deg, #7D5BFF 0%, #FFFFFF 100%);
+
+}
+
+
+      .blur-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            backdrop-filter: blur(5px) contrast(1.1) saturate(1.4) brightness(1);
+            mask: radial-gradient(circle at center 50%, transparent 45vh, black 45vh);
+            pointer-events: none;
+        }
+.hobby_container{
+
+  width:100vw;
+  height:100vh;
+
+  display:flex;
+  justify-content: center;
+  align-items: center;
+  position:relative;
+}
 .hobby-page {
   max-width: 480px;
   margin: 0 auto;
   padding: 1.5rem 0.5rem 0 0.5rem;
   text-align: center;
+  height:80vh;
 }
 
 .hobby-title {
-  font-size: 2rem;
-  font-weight: bold;
+  font-size: 50px;
+  font-weight: 900;
   margin-bottom: 1rem;
-  color: #6c47ff;
+  color: #fff;
 }
 
 .hobby-form {
@@ -18,38 +45,58 @@
   gap: 0.5rem;
   justify-content: center;
   margin-bottom: 1rem;
+  background-color:#fff;
+  align-items: center;;
+  border-radius:999px;
+  padding:8px;
+  width:330px;
 }
 
 .hobby-input {
   flex: 1;
-  padding: 0.7em 1em;
+  /* padding: 0.7em 1em; */
   font-size: 1.1em;
   border-radius: 999px;
-  border: 1px solid #6c47ff;
+  border: none;
+  color:#000;
+  background:none;
   outline: none;
 }
 
 .hobby-btn {
-  padding: 0.7em 1.2em;
+  width:23px;
+  height:23px;
+  padding:0;
   font-size: 1.1em;
   border-radius: 999px;
   border: none;
-  background: #6c47ff;
+  background: #7D5BFF;
   color: #fff;
   font-weight: bold;
   cursor: pointer;
+  display:flex;
+  justify-content: center;
+  align-items: center;
   transition: background 0.2s;
+  outline: none;;
+
+  &:focus{
+    outline:none;
+  }
 }
 .hobby-btn:hover {
   background: #4b2bbd;
 }
 
 .hobby-canvas {
-  width: 100%;
-  height: 500px;
-  background: #f7f7f7;
-  border-radius: 24px;
+  --bg_color: var(--primary-bg_first);
+  z-index:-1;
+  top:0;
+  left:0;
+  width: 100vw;
+  height: 100vh;
+  background: var(--bg_color);
   box-shadow: 0 2px 16px rgba(108,71,255,0.08);
-  position: relative;
+  position: absolute;
   overflow: hidden;
 }

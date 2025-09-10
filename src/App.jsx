@@ -17,8 +17,8 @@ function App() {
     const engine = Engine.create();
     engineRef.current = engine;
 
-    const width = window.innerWidth > 480 ? 480 : window.innerWidth;
-    const height = 500;
+    const width = window.innerWidth;
+    const height = window.innerHeight;
 
     // 바닥, 벽 (보이지 않는 물리 경계)
     const ground = Bodies.rectangle(width / 2, height - 20, width, 40, {
@@ -84,12 +84,12 @@ function App() {
     width: ${elementWidth}px;
     height: 80px;
     border-radius: 40px;
-    background: #6c47ff;
-    color: white;
+    background: #fff;
+    color: #000;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 14px;
+    font-size: 24px;
     font-weight: bold;
     box-shadow: 0 4px 12px rgba(108, 71, 255, 0.3);
     border: 2px solid #fff;
@@ -140,6 +140,8 @@ function App() {
   };
 
   return (
+    <div className="hobby_container">
+      <div className="blur-overlay"></div>
     <div className="hobby-page">
       <h2 className="hobby-title">GAME</h2>
       <form className="hobby-form" onSubmit={handleAdd}>
@@ -151,22 +153,26 @@ function App() {
           placeholder="취미를 입력하세요"
         />
         <button className="hobby-btn" type="submit">
-          추가
+          <svg width="8" height="14" viewBox="0 0 8 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M0.29381 12.2871L5.57839 7.00016L0.29381 1.71322C-0.0979368 1.3213 -0.0979368 0.685864 0.29381 0.293942C0.685557 -0.0979806 1.3207 -0.0979806 1.71245 0.293942L7.70635 6.29052C8.09778 6.68247 8.09799 7.31799 7.70635 7.7098L1.71245 13.7064C1.32079 14.0979 0.685476 14.0979 0.29381 13.7064C-0.0978291 13.3146 -0.097614 12.6791 0.29381 12.2871Z" fill="white"/>
+</svg>
+
         </button>
       </form>
       <div
         ref={sceneRef}
         className="hobby-canvas"
-        style={{
-          width: '100%',
-          height: 500,
-          margin: '0 auto',
-          position: 'relative',
-          overflow: 'hidden',
-          border: '2px solid #ddd',
-          borderRadius: '8px',
-        }}
+        // style={{
+        //   width: '100%',
+        //   height: 500,
+        //   margin: '0 auto',
+        //   position: 'relative',
+        //   overflow: 'hidden',
+        //   border: '2px solid #ddd',
+        //   borderRadius: '8px',
+        // }}
       />
+    </div>
     </div>
   );
 }
