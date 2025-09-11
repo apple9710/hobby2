@@ -17,17 +17,17 @@ function App() {
     const engine = Engine.create();
     engineRef.current = engine;
 
-    const width = window.innerWidth;
+    const width = Math.min(window.innerWidth, 480);
     const height = window.innerHeight;
 
     // 바닥, 벽 (보이지 않는 물리 경계)
-    const ground = Bodies.rectangle(width / 2, height - 20, width, 40, {
+    const ground = Bodies.rectangle(window.innerWidth / 2, height - 20, width, 40, {
       isStatic: true,
     });
-    const leftWall = Bodies.rectangle(20, height / 2, 40, height, {
+    const leftWall = Bodies.rectangle((window.innerWidth / 2 - (width / 2)) + 20, height / 2, 40, height, {
       isStatic: true,
     });
-    const rightWall = Bodies.rectangle(width - 20, height / 2, 40, height, {
+    const rightWall = Bodies.rectangle((window.innerWidth / 2 + (width / 2)) - 20, height / 2, 40, height, {
       isStatic: true,
     });
     World.add(engine.world, [ground, leftWall, rightWall]);
@@ -51,7 +51,7 @@ function App() {
       Bodies = Matter.Bodies;
 
     // 8개 제한 - 가장 오래된 공 제거
-    if (bodiesRef.current.length >= 8) {
+    if (bodiesRef.current.length >=  10) {
       const oldest = bodiesRef.current.shift();
       Matter.World.remove(engineRef.current.world, oldest.body);
       oldest.element.remove();
@@ -60,14 +60,18 @@ function App() {
     // 텍스트 길이에 따른 크기 계산
     const textLength = hobbyText.length;
     const minWidth = 80;
-    const charWidth = 12; // 글자 하나당 대략적인 픽셀 너비
+    const charWidth = 24; // 글자 하나당 대략적인 픽셀 너비
     const elementWidth = Math.max(minWidth, textLength * charWidth + 40); // 패딩 포함
     const radius = elementWidth / 2; // 반지름은 너비의 절반
 
     // 새로운 공 생성 (동적 크기)
-    const randomX =
-      Math.random() * (engineRef.current.width - elementWidth) + radius;
-    const body = Bodies.rectangle(randomX, 60, elementWidth, 80, {
+   // ...existing code...
+const centerX = 240;
+const minX = centerX - (480 - elementWidth) / 2 + radius;
+const maxX = centerX + (480 - elementWidth) / 2 - radius;
+const randomX = Math.random() * (maxX - minX) + minX;
+// ...existing code...
+    const body = Bodies.rectangle((window.innerWidth / 2 + (randomX - 240)), 60, elementWidth, 80, {
       label: 'hobby',
       restitution: 0.8,
       chamfer: {
@@ -104,6 +108,76 @@ function App() {
     // body와 element 매핑 저장 (크기 정보도 포함)
     bodiesRef.current.push({ body, element, hobbyText, width: elementWidth });
     World.add(engineRef.current.world, body);
+
+    setTimeout(()=> {
+      addNewIcon()
+
+    },500)
+  };
+  // 새로운 박스만 추가하는 함수
+  const addNewIcon = () => {
+    if (!engineRef.current) return;
+
+    const World = Matter.World,
+      Bodies = Matter.Bodies;
+
+    // 8개 제한 - 가장 오래된 공 제거
+    if (bodiesRef.current.length >=  10) {
+      const oldest = bodiesRef.current.shift();
+      Matter.World.remove(engineRef.current.world, oldest.body);
+      oldest.element.remove();
+    }
+
+    // 텍스트 길이에 따른 크기 계산
+    const minWidth = 80;
+    const elementWidth = Math.min(40,Math.max(minWidth, 80)); // 패딩 포함
+    const radius = elementWidth / 2; // 반지름은 너비의 절반
+
+    // 새로운 공 생성 (동적 크기)
+   // ...existing code...
+const centerX = 240;
+const minX = centerX - (480 - elementWidth) / 2 + radius;
+const maxX = centerX + (480 - elementWidth) / 2 - radius;
+const randomX = Math.random() * (maxX - minX) + minX;
+// ...existing code...
+    const body = Bodies.rectangle((window.innerWidth / 2 + (randomX - 240)), elementWidth / 2, elementWidth, elementWidth, {
+      label: 'hobby',
+      restitution: 0.8,
+      chamfer: {
+        radius: 40, // 모서리 반지름 설정
+      },
+    });
+
+    // HTML 요소 생성
+    const element = document.createElement('div');
+    element.className = 'hobby-icon';
+    element.style.cssText = `
+    position: absolute;
+    width: ${elementWidth}px;
+    height: ${elementWidth}px;
+    border-radius: 9999px;
+    background: #ffff00;
+    color: #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    font-weight: bold;
+    box-shadow: 0 4px 12px rgba(108, 71, 255, 0.3);
+    border: 2px solid #fff;
+    text-align: center;
+    user-select: none;
+    pointer-events: none;
+    transform-origin: center;
+  `;
+
+    sceneRef.current.appendChild(element);
+
+    // body와 element 매핑 저장 (크기 정보도 포함)
+    bodiesRef.current.push({ body, element, width: elementWidth });
+    World.add(engineRef.current.world, body);
+
+
   };
 
   // 물리 엔진 업데이트 및 HTML 요소 위치 동기화
