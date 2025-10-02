@@ -4,7 +4,7 @@ import react from '@vitejs/plugin-react';
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
-  base: '/hobby2/', // GitHub Pages repository name
+  base: '/', // 로컬 개발용
   build: {
     outDir: 'dist',
   },
