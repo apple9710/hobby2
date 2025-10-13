@@ -38,6 +38,8 @@ function HobbyPage() {
   }, [searchParams]);
 
   const [gradientColor, setGradientColor] = useState(getGradientColor());
+  const [apiData, setApiData] = useState(null);
+  const processingRef = useRef(false); // 현재 처리 중인지 확인
 
   // API 요청 함수
   const fetchHobbyData = useCallback(async (subject) => {
@@ -51,7 +53,8 @@ function HobbyPage() {
       }
 
       const data = await response.json();
-      console.log('API Response:', data); // 개발용 로그
+      console.log('API Response:', data);
+      setApiData(data);
     } catch (err) {
       console.error('API Error:', err);
     }
@@ -119,83 +122,8 @@ function HobbyPage() {
     };
   }, []);
 
-  // 새로운 박스만 추가하는 함수
-  const addNewBox = (hobbyText) => {
-    if (!engineRef.current) return;
-
-    const World = Matter.World,
-      Bodies = Matter.Bodies;
-
-    // 8개 제한 - 가장 오래된 공 제거
-    if (bodiesRef.current.length >= 10) {
-      const oldest = bodiesRef.current.shift();
-      Matter.World.remove(engineRef.current.world, oldest.body);
-      oldest.element.remove();
-    }
-
-    // 텍스트 길이에 따른 크기 계산
-    const textLength = hobbyText.length;
-    const minWidth = 80;
-    const charWidth = 24; // 글자 하나당 대략적인 픽셀 너비
-    const elementWidth = Math.max(minWidth, textLength * charWidth + 40); // 패딩 포함
-    const radius = elementWidth / 2; // 반지름은 너비의 절반
-
-    // 새로운 공 생성 (동적 크기)
-    const centerX = 240;
-    const minX = centerX - (480 - elementWidth) / 2 + radius;
-    const maxX = centerX + (480 - elementWidth) / 2 - radius;
-    const randomX = Math.random() * (maxX - minX) + minX;
-    const body = Bodies.rectangle(
-      window.innerWidth / 2 + (randomX - 240),
-      60,
-      elementWidth,
-      80,
-      {
-        label: 'hobby',
-        restitution: 0.8,
-        chamfer: {
-          radius: 40, // 모서리 반지름 설정
-        },
-      },
-    );
-
-    // HTML 요소 생성
-    const element = document.createElement('div');
-    element.className = 'hobby-ball';
-    element.textContent = hobbyText;
-    element.style.cssText = `
-    position: absolute;
-    width: ${elementWidth}px;
-    height: 80px;
-    border-radius: 40px;
-    background: #fff;
-    color: #000;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 24px;
-    font-weight: bold;
-    box-shadow: 0 4px 12px rgba(108, 71, 255, 0.3);
-    border: 2px solid #fff;
-    text-align: center;
-    user-select: none;
-    pointer-events: none;
-    transform-origin: center;
-  `;
-
-    sceneRef.current.appendChild(element);
-
-    // body와 element 매핑 저장 (크기 정보도 포함)
-    bodiesRef.current.push({ body, element, hobbyText, width: elementWidth });
-    World.add(engineRef.current.world, body);
-
-    setTimeout(() => {
-      addNewIcon();
-    }, 500);
-  };
-
   // 새로운 아이콘 추가하는 함수
-  const addNewIcon = async () => {
+  const addNewIcon = useCallback(async () => {
     if (!engineRef.current) return;
 
     const World = Matter.World,
@@ -281,7 +209,113 @@ function HobbyPage() {
     // body와 element 매핑 저장 (크기 정보도 포함)
     bodiesRef.current.push({ body, element, width: elementWidth });
     World.add(engineRef.current.world, body);
-  };
+  }, [searchParams]);
+
+  // 새로운 박스만 추가하는 함수
+  const addNewBox = useCallback((hobbyText) => {
+    if (!engineRef.current) return;
+
+    const World = Matter.World,
+      Bodies = Matter.Bodies;
+
+    // 8개 제한 - 가장 오래된 공 제거
+    if (bodiesRef.current.length >= 10) {
+      const oldest = bodiesRef.current.shift();
+      Matter.World.remove(engineRef.current.world, oldest.body);
+      oldest.element.remove();
+    }
+
+    // 텍스트 길이에 따른 크기 계산
+    const textLength = hobbyText.length;
+    const minWidth = 80;
+    const charWidth = 24; // 글자 하나당 대략적인 픽셀 너비
+    const elementWidth = Math.max(minWidth, textLength * charWidth + 40); // 패딩 포함
+    const radius = elementWidth / 2; // 반지름은 너비의 절반
+
+    // 새로운 공 생성 (동적 크기)
+    const centerX = 240;
+    const minX = centerX - (480 - elementWidth) / 2 + radius;
+    const maxX = centerX + (480 - elementWidth) / 2 - radius;
+    const randomX = Math.random() * (maxX - minX) + minX;
+    const body = Bodies.rectangle(
+      window.innerWidth / 2 + (randomX - 240),
+      60,
+      elementWidth,
+      80,
+      {
+        label: 'hobby',
+        restitution: 0.8,
+        chamfer: {
+          radius: 40, // 모서리 반지름 설정
+        },
+      },
+    );
+
+    // HTML 요소 생성
+    const element = document.createElement('div');
+    element.className = 'hobby-ball';
+    element.textContent = hobbyText;
+    element.style.cssText = `
+    position: absolute;
+    width: ${elementWidth}px;
+    height: 80px;
+    border-radius: 40px;
+    background: #fff;
+    color: #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    font-weight: bold;
+    box-shadow: 0 4px 12px rgba(108, 71, 255, 0.3);
+    border: 2px solid #fff;
+    text-align: center;
+    user-select: none;
+    pointer-events: none;
+    transform-origin: center;
+  `;
+
+    sceneRef.current.appendChild(element);
+
+    // body와 element 매핑 저장 (크기 정보도 포함)
+    bodiesRef.current.push({ body, element, hobbyText, width: elementWidth });
+    World.add(engineRef.current.world, body);
+
+    setTimeout(() => {
+      addNewIcon();
+    }, 500);
+  }, [addNewIcon]);
+
+  // API 데이터를 순차적으로 처리하는 함수
+  const processApiDataSequentially = useCallback(
+    async (data) => {
+      if (!data || processingRef.current) return;
+
+      processingRef.current = true;
+
+      // API 응답에서 words 배열 추출
+      const words = data.words || [];
+
+      for (let i = 0; i < words.length; i++) {
+        const word = words[i];
+        if (word) {
+          addNewBox(word);
+          // 각 박스 추가 사이에 딜레이 (1초)
+          await new Promise((resolve) => setTimeout(resolve, 1000));
+        }
+      }
+
+      processingRef.current = false;
+    },
+    [addNewBox],
+  );
+
+  // API 데이터가 변경될 때마다 순차 처리 실행
+  useEffect(() => {
+    if (apiData) {
+      processApiDataSequentially(apiData);
+    }
+  }, [apiData, processApiDataSequentially]);
 
   // 물리 엔진 업데이트 및 HTML 요소 위치 동기화
   useEffect(() => {
