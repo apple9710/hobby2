@@ -38,18 +38,12 @@ function HobbyPage() {
   }, [searchParams]);
 
   const [gradientColor, setGradientColor] = useState(getGradientColor());
-  const [apiData, setApiData] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
 
   // API 요청 함수
   const fetchHobbyData = useCallback(async (subject) => {
-    setIsLoading(true);
-    setError(null);
-
     try {
       const response = await fetch(
-        `https://chukapi.kr/api/hobby?subject=${subject.toLowerCase()}`,
+        `http://chukapi.xyz:3000/hobby/${subject.toLowerCase()}`,
       );
 
       if (!response.ok) {
@@ -57,13 +51,9 @@ function HobbyPage() {
       }
 
       const data = await response.json();
-      setApiData(data);
       console.log('API Response:', data); // 개발용 로그
     } catch (err) {
       console.error('API Error:', err);
-      setError(err.message);
-    } finally {
-      setIsLoading(false);
     }
   }, []);
 
@@ -205,65 +195,86 @@ function HobbyPage() {
   };
 
   // 새로운 아이콘 추가하는 함수
-  const addNewIcon = () => {
+  const addNewIcon = async () => {
     if (!engineRef.current) return;
 
     const World = Matter.World,
       Bodies = Matter.Bodies;
 
-    // 8개 제한 - 가장 오래된 공 제거
+    // 10개 제한 - 가장 오래된 공 제거
     if (bodiesRef.current.length >= 10) {
       const oldest = bodiesRef.current.shift();
       Matter.World.remove(engineRef.current.world, oldest.body);
       oldest.element.remove();
     }
 
-    // 텍스트 길이에 따른 크기 계산
-    const minWidth = 80;
-    const elementWidth = Math.min(40, Math.max(minWidth, 80)); // 패딩 포함
-    const radius = elementWidth / 2; // 반지름은 너비의 절반
+    // 랜덤 크기 (지름 40-80px)
+    const elementWidth = Math.floor(Math.random() * (80 - 40 + 1)) + 40;
+    const radius = elementWidth / 2;
+
+    // 랜덤 색상 선택 (3가지 중 하나)
+    const colors = ['#7D5BFF', '#00E0C7', '#FF6633'];
+    const randomColor = colors[Math.floor(Math.random() * colors.length)];
+
+    // 현재 subject에 해당하는 SVG 아이콘 가져오기
+    const subject = searchParams.get('subject')?.toLowerCase() || 'game';
+    const svgPath = `${import.meta.env.BASE_URL}${subject}.svg`;
 
     // 새로운 공 생성 (동적 크기)
     const centerX = 240;
     const minX = centerX - (480 - elementWidth) / 2 + radius;
     const maxX = centerX + (480 - elementWidth) / 2 - radius;
     const randomX = Math.random() * (maxX - minX) + minX;
-    const body = Bodies.rectangle(
+    const body = Bodies.circle(
       window.innerWidth / 2 + (randomX - 240),
       elementWidth / 2,
-      elementWidth,
-      elementWidth,
+      radius,
       {
         label: 'hobby',
         restitution: 0.8,
-        chamfer: {
-          radius: 40, // 모서리 반지름 설정
-        },
       },
     );
 
     // HTML 요소 생성
     const element = document.createElement('div');
     element.className = 'hobby-icon';
+
+    // SVG를 fetch하여 색상 변경
+    try {
+      const response = await fetch(svgPath);
+      const svgText = await response.text();
+      // fill="black" 또는 fill 속성을 랜덤 색상으로 변경
+      const coloredSvg = svgText.replace(
+        /fill="[^"]*"/g,
+        `fill="${randomColor}"`,
+      );
+      element.innerHTML = coloredSvg;
+    } catch (error) {
+      console.error('SVG 로드 실패:', error);
+      // 폴백: 기본 아이콘
+      element.innerHTML = `<div style="width: 60%; height: 60%; background: ${randomColor};"></div>`;
+    }
+
     element.style.cssText = `
     position: absolute;
     width: ${elementWidth}px;
     height: ${elementWidth}px;
     border-radius: 9999px;
-    background: #ffff00;
-    color: #000;
+    background: transparent;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 24px;
-    font-weight: bold;
-    box-shadow: 0 4px 12px rgba(108, 71, 255, 0.3);
-    border: 2px solid #fff;
-    text-align: center;
     user-select: none;
     pointer-events: none;
     transform-origin: center;
   `;
+
+    // SVG 크기 조정
+    const svg = element.querySelector('svg');
+    if (svg) {
+      svg.style.width = '60%';
+      svg.style.height = '60%';
+    }
 
     sceneRef.current.appendChild(element);
 
@@ -313,19 +324,6 @@ function HobbyPage() {
       <div className="blur-overlay"></div>
       <div className="hobby-page">
         <h2 className="hobby-title">{currentSubject}</h2>
-
-        {/* API 상태 표시 (개발용 - 나중에 제거 가능) */}
-        {isLoading && (
-          <p style={{ color: 'white', fontSize: '14px' }}>API 로딩 중...</p>
-        )}
-        {error && (
-          <p style={{ color: '#ff6b6b', fontSize: '14px' }}>
-            API 에러: {error}
-          </p>
-        )}
-        {apiData && (
-          <p style={{ color: '#51cf66', fontSize: '14px' }}>API 요청 성공!</p>
-        )}
 
         <form className="hobby-form" onSubmit={handleAdd}>
           <input
