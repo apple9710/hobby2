@@ -1,11 +1,11 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route } from 'react-router-dom';
 import HomePage from './pages/HomePage';
 import HobbyPage from './pages/HobbyPage';
 import './App.css';
 
 function App() {
   return (
-    <Router basename="/hobby2">
+    <Router>
       <div className="app">
         <Routes>
           <Route path="/" element={<HomePage />} />
