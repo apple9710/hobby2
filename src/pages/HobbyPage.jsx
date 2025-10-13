@@ -345,12 +345,39 @@ function HobbyPage() {
     return () => clearInterval(runner);
   }, []);
 
-  const handleAdd = (e) => {
+  const handleAdd = async (e) => {
     e.preventDefault();
     if (!input.trim()) return;
 
-    addNewBox(input.trim());
+    const word = input.trim();
+    const subject = searchParams.get('subject')?.toLowerCase() || 'game';
+
+    // 화면에 먼저 표시
+    addNewBox(word);
     setInput('');
+
+    // 서버에 POST 요청
+    try {
+      const response = await fetch(
+        `https://chukapi.xyz:3000/hobby/${subject}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ word }),
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('Word added:', data);
+    } catch (err) {
+      console.error('POST Error:', err);
+    }
   };
 
   return (
